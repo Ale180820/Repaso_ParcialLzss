@@ -15,6 +15,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const lzbase62 = require('lzbase62');
 const axios  = require('axios');
+var admin = require("firebase-admin");
 
 const app = express();
 // Dapr publishes messages with the application/cloudevents+json content-type
@@ -25,6 +26,15 @@ const daprPort = process.env.DAPR_HTTP_PORT ?? 3500;
 const daprUrl = `http://localhost:${daprPort}/v1.0`;
 const pubsubName = 'pubsub';
 
+var serviceAccount = require("./key.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://compressapp-6e029-default-rtdb.firebaseio.com"
+});
+
+const db = admin.database();
+var ref = db.ref("/textCompression");
 
 app.get('/dapr/subscribe', (_req, res) => {
     res.json([
@@ -46,7 +56,7 @@ app.get('/dapr/subscribe', (_req, res) => {
     ]);
 });
 
-app.post('/CompressText', (req, res) => {
+app.post('/CompressText', async (req, res) => {
     const compressed = lzbase62.compress(req.body.data.message);
     console.log("Texto Original: ", req.body.data.message);
     console.log("Texto Comprimido: ", compressed);
@@ -55,6 +65,7 @@ app.post('/CompressText', (req, res) => {
         message: compressed
     }
     axios.post(`${daprUrl}/publish/${pubsubName}/resultado`, newPost);
+    ref.push(newPost);
     res.sendStatus(200);
 });
 
