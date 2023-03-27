@@ -55,11 +55,6 @@ app.post('/CompressText', (req, res) => {
         message: compressed
     }
     axios.post(`${daprUrl}/publish/${pubsubName}/resultado`, newPost);
-    const usersRef = admin.child('compress');
-        usersRef.set({
-        messageType: newPost.messageType,
-        message: newPost.message
-    });
     res.sendStatus(200);
 });
 
